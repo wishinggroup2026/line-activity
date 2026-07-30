@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>願望池・建立活動</title>
+<meta name="description" content="願望池活動報名平台——建立與編輯你的活動">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='10' fill='%23E2634C'/%3E%3Cg fill='%23FFF6EA'%3E%3Cellipse cx='18' cy='10.4' rx='3.4' ry='5'/%3E%3Cellipse cx='18' cy='25.6' rx='3.4' ry='5'/%3E%3Cellipse cx='10.4' cy='18' rx='5' ry='3.4'/%3E%3Cellipse cx='25.6' cy='18' rx='5' ry='3.4'/%3E%3Ccircle cx='18' cy='18' r='2.4' fill='%23E2634C'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<style>
+/* ===== 建立／編輯活動 頁面專屬樣式 ===== */
+.page-head-col { max-width: 680px; margin: 0 auto; }
+#ev-form select { cursor: pointer; }
+.desc-foot { display: flex; justify-content: flex-end; margin-top: 8px; }
+.form-col .empty {
+  margin-top: 26px; padding: 70px 20px;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+}
+/* 時間選單：時 : 分 */
+.time-select { display: flex; align-items: center; gap: 8px; }
+.time-select select { flex: 1 1 0; min-width: 0; }
+.time-select .tp-colon { color: var(--ink-3); font-weight: 800; }
+</style>
+</head>
+<body>
+
+<header id="site-head" class="site-head"></header>
+
+<main>
+  <section class="page-head container">
+    <div class="page-head-col">
+      <div class="back-row">
+        <button class="back-circle" id="back-btn" type="button" aria-label="返回上一頁"></button>
+        <span class="crumb">主辦人工具</span>
+      </div>
+      <h1 id="page-title">建立新活動</h1>
+      <p class="sub" id="page-sub">填寫活動資訊，完成後活動會立即出現在首頁列表中</p>
+    </div>
+  </section>
+
+  <section class="container">
+    <div class="form-col" id="form-wrap">
+      <form id="ev-form" novalidate>
+
+        <!-- 基本資訊 -->
+        <section class="form-card">
+          <div class="form-head"><span class="fc-ic fc-red" id="ic-basic"></span><h2>基本資訊</h2></div>
+          <div class="field">
+            <label for="f-title">活動名稱 <b class="req">*</b></label>
+            <input id="f-title" name="title" maxlength="60" placeholder="例：週末羽球團練・初學者友善" autocomplete="off">
+            <span class="err"></span>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="f-category">活動類別 <b class="req">*</b></label>
+              <select id="f-category" name="category">
+                <option value="">選擇類別</option>
+                <option>運動健身</option>
+                <option>學習成長</option>
+                <option>桌遊娛樂</option>
+                <option>戶外踏青</option>
+                <option>藝文攝影</option>
+                <option>音樂表演</option>
+                <option>手作烘焙</option>
+                <option>科技交流</option>
+                <option>美食聚會</option>
+                <option>其他</option>
+              </select>
+              <span class="err"></span>
+            </div>
+            <div class="field">
+              <label for="f-tags">活動標籤</label>
+              <input id="f-tags" name="tags" placeholder="例：羽球, 團練, 初學者（用逗號分隔）" autocomplete="off">
+            </div>
+          </div>
+          <div class="field">
+            <label for="f-cover">封面圖片連結</label>
+            <input id="f-cover" name="cover" type="url" placeholder="https://…" autocomplete="off">
+            <p class="hint">貼上圖片網址，留空會自動產生</p>
+          </div>
+        </section>
+
+        <!-- 時間設定 -->
+        <section class="form-card">
+          <div class="form-head"><span class="fc-ic fc-green" id="ic-time"></span><h2>時間設定</h2></div>
+          <div class="grid2">
+            <div class="field">
+              <label for="f-date">開始日期 <b class="req">*</b></label>
+              <input id="f-date" name="date" type="date">
+              <span class="err"></span>
+            </div>
+            <div class="field">
+              <label for="f-dateEnd">結束日期</label>
+              <input id="f-dateEnd" name="dateEnd" type="date">
+              <p class="hint">連續多天的活動才需填；單日活動留空即可</p>
+              <span class="err"></span>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="f-start-h">開始時間</label>
+              <div class="time-select" data-time="start">
+                <select class="tp-h" id="f-start-h" aria-label="開始時間・小時"></select>
+                <span class="tp-colon">:</span>
+                <select class="tp-m" aria-label="開始時間・分鐘"></select>
+              </div>
+              <input id="f-start" name="start" type="hidden">
+              <span class="err"></span>
+            </div>
+            <div class="field">
+              <label for="f-end-h">結束時間</label>
+              <div class="time-select" data-time="end">
+                <select class="tp-h" id="f-end-h" aria-label="結束時間・小時"></select>
+                <span class="tp-colon">:</span>
+                <select class="tp-m" aria-label="結束時間・分鐘"></select>
+              </div>
+              <input id="f-end" name="end" type="hidden">
+              <span class="err"></span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="f-regStart">報名開始時間 <b class="req">*</b></label>
+            <input id="f-regStart" name="regStart" type="datetime-local">
+            <span class="err"></span>
+          </div>
+          <div class="field">
+            <label for="f-regEnd">報名截止時間 <b class="req">*</b></label>
+            <input id="f-regEnd" name="regEnd" type="datetime-local">
+            <span class="err"></span>
+          </div>
+        </section>
+
+        <!-- 地點資訊 -->
+        <section class="form-card">
+          <div class="form-head"><span class="fc-ic fc-orange" id="ic-place"></span><h2>地點資訊</h2></div>
+          <div class="grid2">
+            <div class="field">
+              <label for="f-city">城市</label>
+              <input id="f-city" name="city" maxlength="20" placeholder="例：台北" autocomplete="off">
+              <span class="err"></span>
+            </div>
+            <div class="field">
+              <label for="f-venue">詳細地點</label>
+              <input id="f-venue" name="venue" maxlength="60" placeholder="例：天母運動中心 B 棟 3 樓" autocomplete="off">
+              <span class="err"></span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="f-mapUrl">Google 地圖連結</label>
+            <input id="f-mapUrl" name="mapUrl" type="url" maxlength="300" placeholder="https://maps.app.goo.gl/…（選填）" autocomplete="off">
+            <p class="hint">在 Google 地圖找到地點 → 分享 → 複製連結貼到這裡；留空會依地點名稱自動產生搜尋連結</p>
+            <span class="err"></span>
+          </div>
+        </section>
+
+        <!-- 報名設定 -->
+        <section class="form-card">
+          <div class="form-head"><span class="fc-ic fc-red" id="ic-reg"></span><h2>報名設定</h2></div>
+          <div class="grid2">
+            <div class="field">
+              <label for="f-capacity">報名人數上限 <b class="req">*</b></label>
+              <input id="f-capacity" name="capacity" type="number" min="1" step="1" placeholder="例：20">
+              <p class="hint">發布後你會自動列入參加名單，佔用其中一個名額</p>
+              <span class="err"></span>
+            </div>
+            <div class="field">
+              <label for="f-waitlistCap">候補名額</label>
+              <input id="f-waitlistCap" name="waitlistCap" type="number" min="0" step="1" placeholder="例：5">
+              <p class="hint">額滿後可候補的人數，0 或留空表示不開放候補</p>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="f-fee">費用</label>
+              <input id="f-fee" name="fee" type="number" min="0" placeholder="填數字即可，如：250（免費請留空）">
+            </div>
+            <div class="field">
+              <label for="f-contact">聯絡資訊</label>
+              <input id="f-contact" name="contact" maxlength="60" placeholder="例：LINE 社群、Email…" autocomplete="off">
+            </div>
+          </div>
+        </section>
+
+        <!-- 活動介紹 -->
+        <section class="form-card">
+          <div class="form-head"><span class="fc-ic fc-green" id="ic-desc"></span><h2>活動介紹</h2></div>
+          <div class="field">
+            <label for="f-desc">活動內容說明 <b class="req">*</b></label>
+            <textarea id="f-desc" name="desc" maxlength="2000" placeholder="描述一下活動內容、適合對象、需要準備什麼……"></textarea>
+            <span class="err"></span>
+            <div class="desc-foot"><span class="char-count" id="desc-count">0/2000</span></div>
+          </div>
+        </section>
+
+        <!-- 頁尾動作 -->
+        <div class="form-footer">
+          <button class="btn btn-light" type="button" id="cancel-btn">取消</button>
+          <div class="right">
+            <button class="btn btn-light" type="button" id="draft-btn">儲存草稿</button>
+            <button class="btn btn-primary" type="submit" id="publish-btn">發布活動</button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer id="site-foot" class="site-foot"></footer>
+
+<script src="js/store.js"></script>
+<script src="js/app.js"></script>
+<script src="js/create.js"></script>
+</body>
+</html>

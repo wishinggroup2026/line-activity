@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>願望池・活動詳情</title>
+<meta name="description" content="願望池活動報名平台——活動詳情、報名與留言討論">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='10' fill='%23E2634C'/%3E%3Cg fill='%23FFF6EA'%3E%3Cellipse cx='18' cy='10.4' rx='3.4' ry='5'/%3E%3Cellipse cx='18' cy='25.6' rx='3.4' ry='5'/%3E%3Cellipse cx='10.4' cy='18' rx='5' ry='3.4'/%3E%3Cellipse cx='25.6' cy='18' rx='5' ry='3.4'/%3E%3Ccircle cx='18' cy='18' r='2.4' fill='%23E2634C'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<style>
+/* ===== 活動詳情頁專屬樣式 ===== */
+.user-menu[hidden] { display: none; }
+.ev-notfound { padding: 90px 20px; }
+
+/* 草稿提示列 */
+.draft-bar { background: var(--orange-soft); color: var(--orange); border-bottom: 1px solid var(--line-soft); }
+.draft-bar .in {
+  display: flex; align-items: center; gap: 10px;
+  padding-top: 10px; padding-bottom: 10px;
+  font-size: 13.5px; font-weight: 600; flex-wrap: wrap;
+}
+.draft-bar .ic { flex: none; }
+.draft-bar .btn { margin-left: auto; }
+.ev-hero .status.s-draft { background: rgba(255, 251, 240, .92); color: var(--ink); box-shadow: none; }
+
+/* 內文與須知寬度比照報名卡 */
+#ev-page .rich-text, #ev-page .notice-box { max-width: 700px; }
+
+/* 已取消提示 */
+.cancel-note {
+  display: flex; gap: 11px; align-items: flex-start;
+  background: var(--red-soft); color: var(--red-deep);
+  border-radius: var(--radius-sm); padding: 14px 18px;
+}
+.cancel-note .ic { margin-top: 3px; flex: none; }
+.cancel-note b { display: block; font-size: 15px; }
+.cancel-note p { font-size: 13px; font-weight: 400; margin-top: 1px; }
+
+/* 留言表單（登入狀態） */
+.cm-as { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; font-size: 14px; }
+.cm-as b { font-weight: 700; }
+.cm-as span { color: var(--ink-3); font-size: 12.5px; }
+
+/* 行內編輯留言 */
+.cm-editing textarea {
+  width: 100%; background: var(--bg-soft); border: 1px solid var(--line-soft);
+  border-radius: 10px; padding: 10px 14px; outline: none; resize: vertical;
+  min-height: 74px; font-size: 14px; margin-top: 4px; transition: .15s;
+}
+.cm-editing textarea:focus { border-color: var(--red); background: var(--card); }
+.cm-edit-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+</style>
+</head>
+<body data-reload-on-auth="1">
+
+<header id="site-head" class="site-head"></header>
+
+<main id="ev-page"></main>
+
+<footer id="site-foot" class="site-foot"></footer>
+
+<script src="js/store.js"></script>
+<script src="js/app.js"></script>
+<script src="js/event.js"></script>
+</body>
+</html>

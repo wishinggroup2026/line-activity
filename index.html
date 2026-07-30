@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>願望池・探索活動</title>
+<meta name="description" content="願望池活動報名平台——瀏覽、報名、揪團一次搞定">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='10' fill='%23E2634C'/%3E%3Cg fill='%23FFF6EA'%3E%3Cellipse cx='18' cy='10.4' rx='3.4' ry='5'/%3E%3Cellipse cx='18' cy='25.6' rx='3.4' ry='5'/%3E%3Cellipse cx='10.4' cy='18' rx='5' ry='3.4'/%3E%3Cellipse cx='25.6' cy='18' rx='5' ry='3.4'/%3E%3Ccircle cx='18' cy='18' r='2.4' fill='%23E2634C'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="site-head" class="site-head"></header>
+
+<main>
+  <section class="search-zone container" id="search">
+    <div class="searchbar">
+      <div class="s-input" id="s-kw-wrap"><span class="s-ic"></span>
+        <input id="s-kw" type="search" placeholder="搜尋活動名稱、標籤或地點" autocomplete="off">
+      </div>
+      <div class="s-div"></div>
+      <div class="s-when"><span class="s-cal"></span>
+        <select id="s-when" aria-label="時間篩選">
+          <option value="">任何時間</option>
+          <option value="today">今天</option>
+          <option value="7d">未來 7 天</option>
+          <option value="30d">未來 30 天</option>
+          <option value="pick">選擇日期…</option>
+        </select>
+        <input id="s-date" type="date" hidden aria-label="選擇日期">
+      </div>
+      <button class="btn btn-primary btn-round" id="s-go">搜尋活動</button>
+    </div>
+    <div class="hot-tags" id="hot-tags"></div>
+  </section>
+
+  <section class="hero-head container">
+    <span class="eyebrow">By Date</span>
+    <h1>這幾天，<em>有人在揪你</em></h1>
+    <div class="hero-row">
+      <p class="hero-sub">按日期排好的活動清單。看見有興趣的就點進去看看，名額有限先搶先贏。</p>
+      <span class="hero-count" id="result-count"></span>
+    </div>
+  </section>
+
+  <section class="filter-zone container">
+    <div class="chip-row" id="status-chips"></div>
+    <div class="chip-row month-row" id="month-chips" role="group" aria-label="查詢月份"></div>
+  </section>
+
+  <section class="container" id="event-groups"></section>
+</main>
+
+<footer id="site-foot" class="site-foot"></footer>
+
+<script src="js/store.js"></script>
+<script src="js/app.js"></script>
+<script src="js/index.js"></script>
+</body>
+</html>
