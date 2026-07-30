@@ -27,12 +27,10 @@
     remind: { cls: 'n-remind', ic: I.bell }
   };
 
-  var REMIND_KEYS = ['remind3d', 'remind1d', 'remindDay'];
+  var REMIND_KEYS = ['remind1d'];
   var SETTING_GROUPS = [
     { label: '活動提醒', rows: [
-      ['remind3d', '活動前 3 天提醒', '已報名的活動開始前 3 天通知你'],
-      ['remind1d', '活動前 1 天提醒', '已報名的活動開始前 1 天通知你'],
-      ['remindDay', '活動當天提醒', '活動當天再提醒一次，別忘了準時出席']
+      ['remind1d', '活動前 1 天提醒', '已報名的活動開始前 1 天通知你']
     ] },
     { label: '通知管道', rows: [
       ['chLine', 'LINE 通知', '掃下方 QR Code 加入官方帳號並完成綁定後，通知會真實推送到你的 LINE'],

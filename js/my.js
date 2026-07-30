@@ -36,6 +36,23 @@
   tabHost.hidden = false;
   WP.$('#head-sub').innerHTML = '嗨，' + WP.esc(me.name) + '！你的報名紀錄與主辦的活動，都在這裡一次掌握。';
 
+  /* ---------- 個人資料卡（大頭照） ---------- */
+  var profileCard = document.createElement('div');
+  profileCard.className = 'profile-card';
+  function renderProfile() {
+    me = WP.me();
+    var sub = me.avatar ? ('大頭照：' + WP.avatarLabel(me.avatar)) : '還沒設定大頭照，挑一隻動物更好認！';
+    profileCard.innerHTML =
+      '<span class="pc-ava">' + WP.avatar(me, 'lg') + '</span>' +
+      '<div class="pc-main"><b>' + WP.esc(me.name) + '</b><span>' + WP.esc(sub) + '</span></div>' +
+      '<button class="btn btn-light btn-sm" id="pc-edit">' + I.edit + '更換大頭照</button>';
+    WP.$('#pc-edit', profileCard).addEventListener('click', function () {
+      WP.pickAvatar(function () { renderProfile(); });
+    });
+  }
+  renderProfile();
+  statHost.parentNode.insertBefore(profileCard, statHost);
+
   var state = {
     tab: WP.qs('tab') === 'hosted' ? 'hosted' : 'mine',
     sub: 'all'

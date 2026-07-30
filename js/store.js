@@ -59,7 +59,7 @@ window.WP = window.WP || {};
   var AVATAR_BGS = ['#F2B8AC', '#F5D3A1', '#BCD9C0', '#B9CFE0', '#E4C6E0', '#F0E1A8', '#C9C4E4', '#F5C1CE', '#CFE0D8', '#EAD3BE'];
 
   function seed() {
-    var d = { v: 1, session: null, users: [], events: [], regs: [], comments: [], notifs: [], settings: {} };
+    var d = { v: 1, session: null, users: [], events: [], regs: [], comments: [], notifs: [], settings: {}, groupNotified: [] };
 
     function addUser(id, name, emoji, bg) { d.users.push({ id: id, name: name, emoji: emoji || '', bg: bg || AVATAR_BGS[d.users.length % AVATAR_BGS.length], createdAt: nowISO() }); return id; }
     addUser('org_badminton', '週三羽球社', '🏸', '#F2B8AC');
@@ -216,21 +216,34 @@ window.WP = window.WP || {};
     return d.users.find(function (u) { return u.id === d.session; }) || null;
   };
   WP.getUser = function (id) { return load().users.find(function (u) { return u.id === id; }) || null; };
-  WP.login = function (name) {
+  WP.login = function (name, avatar) {
     var d = load();
     name = (name || '').trim();
     if (!name) return null;
     var u = d.users.find(function (x) { return x.name === name; });
     if (!u) {
-      u = { id: uid('u'), name: name, emoji: '', bg: AVATAR_BGS[Math.floor(Math.random() * AVATAR_BGS.length)], createdAt: nowISO() };
+      u = { id: uid('u'), name: name, emoji: '', avatar: avatar || '', bg: AVATAR_BGS[Math.floor(Math.random() * AVATAR_BGS.length)], createdAt: nowISO() };
       if (isAdminName(name)) { u.emoji = '🛡️'; u.bg = '#2B2620'; }
       d.users.push(u);
+    } else if (avatar) {
+      u.avatar = avatar; // 既有使用者重新登入時若有挑選，更新大頭照
     }
     d.session = u.id;
     save();
     return u;
   };
   WP.logout = function () { load().session = null; save(); };
+
+  /** 設定目前登入者的動物大頭照（key 見 app.js 的 WP.animalAvatars；空字串＝取消） */
+  WP.setAvatar = function (key) {
+    var d = load();
+    if (!d.session) return null;
+    var u = d.users.find(function (x) { return x.id === d.session; });
+    if (!u) return null;
+    u.avatar = key || '';
+    save();
+    return u;
+  };
 
   /* ---------- 活動 ---------- */
   WP.events = function () { return load().events.slice(); };
@@ -319,10 +332,29 @@ window.WP = window.WP || {};
     });
   }
 
-  /** 新活動發布時，公告到所有已加入機器人的 LINE 群組 */
-  function announceLine(ev) {
+  /** 活動詳情頁的公開連結：僅在已設定正式站台網址（SITE_URL）時附上，否則不附連結 */
+  function eventUrl(ev) {
+    if (!SITE_URL) return '';
+    try { return new URL('event.html?id=' + encodeURIComponent(ev.id), SITE_URL).href; }
+    catch (e) { return ''; }
+  }
+
+  /** 送出一則群組公告到 Apps Script（推播給所有已加入機器人的 LINE 群組） */
+  function announceGroup(title, body) {
     var url = WP.gasUrl();
     if (!url || typeof fetch !== 'function') return;
+    try {
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'announce', title: title, body: body })
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
+  /** 新活動發布（活動成立）時，公告到所有已加入機器人的 LINE 群組 */
+  function announceLine(ev) {
+    if (!WP.gasUrl() || typeof fetch !== 'function') return;
     var when = (ev.date || '日期未定') +
       (ev.dateEnd && ev.dateEnd > ev.date ? ' ～ ' + ev.dateEnd : '') +
       (ev.start ? ' ' + ev.start : '') + (ev.start && ev.end ? '–' + ev.end : '');
@@ -333,19 +365,38 @@ window.WP = window.WP || {};
       '💰 ' + (ev.fee > 0 ? 'NT$ ' + ev.fee : '免費') + '・名額 ' + ev.capacity + ' 人'
     ];
     if (ev.mapUrl && /^https?:\/\//i.test(ev.mapUrl)) lines.push('🗺️ ' + ev.mapUrl);
-    try {
-      if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol)) {
-        lines.push(new URL('event.html?id=' + encodeURIComponent(ev.id), location.href).href);
-      }
-    } catch (e) {}
-    try {
-      fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'announce', title: '新活動上架 🎉', body: lines.join('\n') })
-      }).catch(function () {});
-    } catch (e2) {}
+    var link = eventUrl(ev);
+    if (link) lines.push(link);
+    announceGroup('新活動上架 🎉', lines.join('\n'));
   }
+
+  /** 活動當天公告到 LINE 群組（每場僅一次；任一裝置載入頁面時檢查補發） */
+  WP.ensureGroupReminders = function () {
+    if (!WP.gasUrl() || typeof fetch !== 'function') return;
+    var d = load();
+    if (!d.groupNotified) d.groupNotified = [];
+    var today = WP.todayStr();
+    var changed = false;
+    d.events.forEach(function (ev) {
+      if (ev.draft || ev.cancelled) return;
+      if (ev.date !== today) return; // 只在活動開始當天公告
+      var key = 'gday:' + ev.id;
+      if (d.groupNotified.indexOf(key) !== -1) return;
+      d.groupNotified.push(key);
+      changed = true;
+      var t = ev.start ? (ev.start + (ev.end ? '–' + ev.end : '')) : '';
+      var lines = [
+        ev.title,
+        '⏰ 今天登場' + (t ? '，' + t : ''),
+        '📍 ' + (ev.venue || ev.city || '地點未定')
+      ];
+      if (ev.mapUrl && /^https?:\/\//i.test(ev.mapUrl)) lines.push('🗺️ ' + ev.mapUrl);
+      var link = eventUrl(ev);
+      if (link) lines.push(link);
+      announceGroup('今天有活動 📣', lines.join('\n'));
+    });
+    if (changed) save();
+  };
 
   WP.deleteEvent = function (id) {
     var d = load();
@@ -610,7 +661,7 @@ window.WP = window.WP || {};
   };
 
   /* ---------- 通知設定 ---------- */
-  var DEFAULT_SETTINGS = { remind3d: true, remind1d: true, remindDay: true, chLine: true, chEmail: false };
+  var DEFAULT_SETTINGS = { remind1d: true, chLine: true, chEmail: false };
   WP.settings = function (userId) {
     var me = userId ? { id: userId } : WP.me();
     if (!me) return Object.assign({}, DEFAULT_SETTINGS);
@@ -624,7 +675,7 @@ window.WP = window.WP || {};
     save();
   };
 
-  /** 活動提醒（3 天／1 天／當天）：每次載入頁面時檢查並補發，不重複 */
+  /** 個人活動提醒（活動前 1 天）：每次載入頁面時檢查並補發，不重複 */
   WP.ensureReminders = function () {
     var me = WP.me();
     if (!me) return;
@@ -638,14 +689,9 @@ window.WP = window.WP || {};
       var st = WP.statusOf(ev);
       if (st === 'ended' || st === 'ongoing') return;
       var days = Math.round((dt(ev.date, '00:00') - today) / 86400000);
-      var tag = null, label = null;
-      if (days === 0) { tag = 'day'; label = '就是今天'; }
-      else if (days === 1) { tag = '1d'; label = '明天登場'; }
-      else if (days <= 3 && days > 1) { tag = '3d'; label = days + ' 天後開始'; }
-      if (!tag) return;
-      if (tag === 'day' && !s.remindDay) return;
-      if (tag === '1d' && !s.remind1d) return;
-      if (tag === '3d' && !s.remind3d) return;
+      if (days !== 1) return; // 個人提醒只在活動前 1 天
+      if (!s.remind1d) return;
+      var tag = '1d', label = '明天登場';
       var key = 'remind:' + tag + ':' + ev.id + ':' + me.id;
       if (d.notifs.some(function (n) { return n.key === key; })) return;
       WP.notify(me.id, {
@@ -654,6 +700,12 @@ window.WP = window.WP || {};
       });
     });
   };
+
+  /* ---------- 正式站台網址 ---------- */
+  // 網站正式部署上線後，把公開首頁網址填在這裡（例如 'https://your-domain.com/'，含子路徑亦可）。
+  // 有填：群組公告（活動成立、當天提醒）會用它組出並附上活動連結。
+  // 留空：群組公告不附活動連結（等有正式網址再填）。
+  var SITE_URL = 'https://wishinggroup2026.github.io/line-activity/index.html';
 
   /* ---------- Google 試算表同步 ---------- */
   // 預設連線的 Apps Script 網址（頁尾「連接 Google 試算表」可覆寫或中斷）

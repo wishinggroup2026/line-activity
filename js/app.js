@@ -41,6 +41,125 @@ window.WP = window.WP || {};
   I.logo = '<svg class="logo-mark" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="10" fill="#E2634C"/><g fill="#FFF6EA"><ellipse cx="18" cy="10.4" rx="3.4" ry="5"/><ellipse cx="18" cy="25.6" rx="3.4" ry="5"/><ellipse cx="10.4" cy="18" rx="5" ry="3.4"/><ellipse cx="25.6" cy="18" rx="5" ry="3.4"/><circle cx="18" cy="18" r="2.4" fill="#E2634C"/></g></svg>';
   WP.icons = I;
 
+  /* ---------- 動物大頭照（自繪 inline SVG，登入者可挑選） ---------- */
+  function eyes(lx, rx, y, r, col) {
+    r = r || 5; col = col || '#3d2b23';
+    var hl = (r * 0.34).toFixed(1);
+    return '<g fill="' + col + '"><circle cx="' + lx + '" cy="' + y + '" r="' + r + '"/><circle cx="' + rx + '" cy="' + y + '" r="' + r + '"/></g>' +
+      '<g fill="#fff"><circle cx="' + (lx + r * 0.32).toFixed(1) + '" cy="' + (y - r * 0.4).toFixed(1) + '" r="' + hl + '"/>' +
+      '<circle cx="' + (rx + r * 0.32).toFixed(1) + '" cy="' + (y - r * 0.4).toFixed(1) + '" r="' + hl + '"/></g>';
+  }
+  function cheeks(lx, rx, y) {
+    return '<g fill="#F5878B" opacity=".42"><circle cx="' + lx + '" cy="' + y + '" r="6"/><circle cx="' + rx + '" cy="' + y + '" r="6"/></g>';
+  }
+  function face(bg, inner) {
+    return '<svg class="face-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' +
+      '<circle cx="50" cy="50" r="50" fill="' + bg + '"/>' + inner + '</svg>';
+  }
+  var lionMane = '';
+  for (var _m = 0; _m < 12; _m++) {
+    var _a = _m / 12 * Math.PI * 2;
+    lionMane += '<circle cx="' + (50 + Math.cos(_a) * 33).toFixed(1) + '" cy="' + (54 + Math.sin(_a) * 33).toFixed(1) + '" r="10" fill="#C97F2E"/>';
+  }
+  // 每隻動物有各自的自然臉型輪廓（尖臉／鵝蛋／寬臉…），耳朵與五官疊在上面
+  var FACES = {
+    fox: face('#FBE3C6', // 尖窄臉
+      '<path d="M22 34 16 6 44 26Z" fill="#EC8836"/><path d="M78 34 84 6 56 26Z" fill="#EC8836"/>' +
+      '<path d="M26 30 23 13 40 26Z" fill="#F9D9BE"/><path d="M74 30 77 13 60 26Z" fill="#F9D9BE"/>' +
+      '<path d="M50 24C68 24 80 36 79 52C78 64 66 82 50 91C34 82 22 64 21 52C20 36 32 24 50 24Z" fill="#F29A46"/>' +
+      '<path d="M50 58C40 58 31 63 33 67C37 78 50 88 50 88C50 88 63 78 67 67C69 63 60 58 50 58Z" fill="#FFF8F0"/>' +
+      eyes(38, 62, 50, 5.5) + cheeks(30, 70, 56) +
+      '<path d="M50 66 45 60 55 60Z" fill="#3d2b23"/>'),
+    cat: face('#C9D6E5', // 尖下巴瓜子臉
+      '<path d="M24 34 20 8 46 26Z" fill="#A9AEB6"/><path d="M76 34 80 8 54 26Z" fill="#A9AEB6"/>' +
+      '<path d="M28 30 26 14 42 26Z" fill="#F2B8C6"/><path d="M72 30 74 14 58 26Z" fill="#F2B8C6"/>' +
+      '<path d="M50 26C71 26 82 40 80 55C78 69 64 85 50 89C36 85 22 69 20 55C18 40 29 26 50 26Z" fill="#B4B9C1"/>' +
+      '<g stroke="#8f949c" stroke-width="2.6" stroke-linecap="round" fill="none"><path d="M50 28v9"/><path d="M40 30l-3 9"/><path d="M60 30l3 9"/></g>' +
+      '<ellipse cx="50" cy="66" rx="16" ry="12" fill="#EDEFF2"/>' +
+      eyes(38, 62, 50, 5.5) +
+      '<path d="M50 64 46 60 54 60Z" fill="#E77E8E"/>' +
+      '<g stroke="#8a8f97" stroke-width="1.4" stroke-linecap="round" fill="none"><path d="M34 64 20 61"/><path d="M34 68 21 70"/><path d="M66 64 80 61"/><path d="M66 68 79 70"/></g>'),
+    rabbit: face('#E8CDE6', // 直立鵝蛋臉
+      '<ellipse cx="40" cy="18" rx="7" ry="19" fill="#FFFFFF"/><ellipse cx="60" cy="18" rx="7" ry="19" fill="#FFFFFF"/>' +
+      '<ellipse cx="40" cy="20" rx="3.2" ry="13" fill="#F4C0D0"/><ellipse cx="60" cy="20" rx="3.2" ry="13" fill="#F4C0D0"/>' +
+      '<ellipse cx="50" cy="57" rx="27" ry="34" fill="#FFFFFF"/>' +
+      eyes(38, 62, 52, 5.5) + cheeks(31, 69, 62) +
+      '<path d="M50 63 46 60 54 60Z" fill="#EE8FA6"/>' +
+      '<path d="M50 63v4M50 67q-4 3-5-1M50 67q4 3 5-1" stroke="#d59aac" stroke-width="1.4" fill="none" stroke-linecap="round"/>'),
+    bear: face('#E9D3BC', // 寬圓臉
+      '<circle cx="26" cy="30" r="12" fill="#9B6B45"/><circle cx="74" cy="30" r="12" fill="#9B6B45"/>' +
+      '<circle cx="26" cy="30" r="6" fill="#C79A78"/><circle cx="74" cy="30" r="6" fill="#C79A78"/>' +
+      '<ellipse cx="50" cy="55" rx="38" ry="32" fill="#A9744C"/>' +
+      '<ellipse cx="50" cy="65" rx="19" ry="14" fill="#E7CDB4"/>' +
+      eyes(38, 62, 50, 5.5) +
+      '<ellipse cx="50" cy="61" rx="4.5" ry="3.4" fill="#4a3524"/>' +
+      '<path d="M50 64v4M50 68q-6 4-7-1M50 68q6 4 7-1" stroke="#6b4a30" stroke-width="1.6" fill="none" stroke-linecap="round"/>'),
+    panda: face('#BFE0C6', // 寬臉
+      '<circle cx="26" cy="26" r="12" fill="#2f2a28"/><circle cx="74" cy="26" r="12" fill="#2f2a28"/>' +
+      '<ellipse cx="50" cy="53" rx="37" ry="33" fill="#FFFFFF"/>' +
+      '<ellipse cx="37" cy="51" rx="9" ry="12" fill="#2f2a28" transform="rotate(-16 37 51)"/>' +
+      '<ellipse cx="63" cy="51" rx="9" ry="12" fill="#2f2a28" transform="rotate(16 63 51)"/>' +
+      '<g fill="#fff"><circle cx="37" cy="52" r="3.8"/><circle cx="63" cy="52" r="3.8"/></g>' +
+      '<g fill="#2f2a28"><circle cx="37.6" cy="52.8" r="2.1"/><circle cx="63.6" cy="52.8" r="2.1"/></g>' +
+      '<ellipse cx="50" cy="63" rx="4" ry="3" fill="#2f2a28"/>' +
+      '<path d="M50 65v4M50 69q-5 4-7-1M50 69q5 4 7-1" stroke="#2f2a28" stroke-width="1.6" fill="none" stroke-linecap="round"/>'),
+    lion: face('#F6E3B0', // 鬃毛框住的臉
+      lionMane +
+      '<circle cx="31" cy="42" r="7" fill="#F5C265"/><circle cx="69" cy="42" r="7" fill="#F5C265"/>' +
+      '<ellipse cx="50" cy="54" rx="31" ry="30" fill="#F5C265"/>' +
+      '<ellipse cx="50" cy="65" rx="17" ry="12" fill="#FDEBC6"/>' +
+      eyes(39, 61, 52, 5.5) + cheeks(32, 68, 63) +
+      '<path d="M50 63 45 58 55 58Z" fill="#7a4a28"/>' +
+      '<path d="M50 63v3" stroke="#7a4a28" stroke-width="1.6" stroke-linecap="round"/>'),
+    frog: face('#DCEBB8', // 寬扁臉
+      '<ellipse cx="50" cy="56" rx="39" ry="32" fill="#84C45B"/>' +
+      '<g fill="#fff"><circle cx="35" cy="40" r="11"/><circle cx="65" cy="40" r="11"/></g>' +
+      '<g fill="#2f3a24"><circle cx="35" cy="42" r="5"/><circle cx="65" cy="42" r="5"/></g>' +
+      '<g fill="#fff"><circle cx="37" cy="40" r="1.8"/><circle cx="67" cy="40" r="1.8"/></g>' +
+      '<g fill="#5a8a3a"><circle cx="45" cy="56" r="1.8"/><circle cx="55" cy="56" r="1.8"/></g>' +
+      '<path d="M30 64 Q50 80 70 64" stroke="#4e7a33" stroke-width="2.8" fill="none" stroke-linecap="round"/>' +
+      cheeks(28, 72, 62)),
+    penguin: face('#BFE0EA', // 直立橢圓
+      '<ellipse cx="50" cy="52" rx="31" ry="38" fill="#3a4048"/>' +
+      '<ellipse cx="50" cy="58" rx="22" ry="28" fill="#FFFFFF"/>' +
+      eyes(43, 57, 48, 4.5) +
+      '<path d="M43 60 57 60 50 70Z" fill="#F4A93B"/>' +
+      cheeks(31, 69, 60)),
+    koala: face('#CFE0DE', // 寬臉大耳
+      '<circle cx="22" cy="40" r="15" fill="#9AA6AD"/><circle cx="78" cy="40" r="15" fill="#9AA6AD"/>' +
+      '<circle cx="22" cy="40" r="8" fill="#E7C0CE"/><circle cx="78" cy="40" r="8" fill="#E7C0CE"/>' +
+      '<ellipse cx="50" cy="54" rx="35" ry="32" fill="#AAB4BA"/>' +
+      eyes(37, 63, 51, 5.5) + cheeks(30, 70, 62) +
+      '<ellipse cx="50" cy="63" rx="9" ry="11" fill="#57504c"/>' +
+      '<ellipse cx="47" cy="60" rx="2.2" ry="3.4" fill="#857d78"/>'),
+    tiger: face('#F7E7BE', // 寬臉帶頰毛
+      '<circle cx="28" cy="30" r="10" fill="#EE8A2E"/><circle cx="72" cy="30" r="10" fill="#EE8A2E"/>' +
+      '<circle cx="28" cy="30" r="5" fill="#4a3324"/><circle cx="72" cy="30" r="5" fill="#4a3324"/>' +
+      '<ellipse cx="50" cy="54" rx="38" ry="33" fill="#F3922F"/>' +
+      '<path d="M14 54 24 49 24 59Z" fill="#F3922F"/><path d="M86 54 76 49 76 59Z" fill="#F3922F"/>' +
+      '<ellipse cx="50" cy="66" rx="20" ry="14" fill="#FFF6EC"/>' +
+      '<g stroke="#33291f" stroke-width="3.2" stroke-linecap="round" fill="none">' +
+      '<path d="M50 24v11"/><path d="M40 26l-3 10"/><path d="M60 26l3 10"/>' +
+      '<path d="M20 50q7 2 11-1"/><path d="M19 58q7 1 11-2"/>' +
+      '<path d="M80 50q-7 2-11-1"/><path d="M81 58q-7 1-11-2"/></g>' +
+      eyes(38, 62, 51, 5.5) +
+      '<path d="M50 64 45.5 60 54.5 60Z" fill="#7a4a28"/>' +
+      '<path d="M50 64v4M50 68q-5 4-7-1M50 68q5 4 7-1" stroke="#6b4a30" stroke-width="1.6" fill="none" stroke-linecap="round"/>')
+  };
+  var ANIMALS = [
+    { key: 'fox', label: '狐狸' }, { key: 'cat', label: '貓咪' },
+    { key: 'rabbit', label: '兔子' }, { key: 'bear', label: '小熊' },
+    { key: 'panda', label: '熊貓' }, { key: 'lion', label: '獅子' },
+    { key: 'frog', label: '青蛙' }, { key: 'penguin', label: '企鵝' },
+    { key: 'koala', label: '無尾熊' }, { key: 'tiger', label: '老虎' }
+  ];
+  WP.faces = FACES;
+  WP.animalAvatars = ANIMALS;
+  WP.avatarLabel = function (key) {
+    for (var i = 0; i < ANIMALS.length; i++) if (ANIMALS[i].key === key) return ANIMALS[i].label;
+    return '';
+  };
+
   /* ---------- 格式化 ---------- */
   var WEEK = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
   function validDateStr(dateStr) { return !!dateStr && !isNaN(WP.dt(dateStr, '00:00')); }
@@ -146,9 +265,37 @@ window.WP = window.WP || {};
   WP.avatar = function (user, size) {
     var cls = 'avatar' + (size ? ' ' + size : '');
     if (!user) return '<span class="' + cls + '" style="background:#E6DCC8">?</span>';
+    if (user.avatar && FACES[user.avatar]) {
+      return '<span class="' + cls + ' has-face">' + FACES[user.avatar] + '</span>';
+    }
     var inner = user.emoji || WP.esc((user.name || '?').trim().charAt(0).toUpperCase());
     var dark = user.bg === '#2B2620';
     return '<span class="' + cls + '" style="background:' + WP.esc(user.bg || '#E6DCC8') + (dark ? ';color:#FFF6EA' : '') + '">' + inner + '</span>';
+  };
+
+  /** 大頭照挑選彈窗：選一隻動物並存到目前登入者 */
+  WP.pickAvatar = function (onPick) {
+    var me = WP.me();
+    if (!me) { WP.requireLogin(function () { WP.pickAvatar(onPick); }); return; }
+    var cur = me.avatar || '';
+    var grid = WP.animalAvatars.map(function (a) {
+      return '<button type="button" class="ava-opt' + (a.key === cur ? ' sel' : '') + '" data-key="' + a.key + '" aria-label="' + WP.esc(a.label) + '">' +
+        '<span class="avatar lg has-face">' + FACES[a.key] + '</span><i>' + WP.esc(a.label) + '</i></button>';
+    }).join('');
+    var m = WP.modal({
+      title: '選擇大頭照',
+      body: '<p class="modal-sub">挑一隻動物當作你的大頭照。</p><div class="ava-grid">' + grid + '</div>'
+    });
+    WP.$$('.ava-opt', m.el).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var key = b.dataset.key;
+        WP.setAvatar(key);
+        m.close();
+        WP.toast('大頭照已更新', 'success');
+        WP.renderHeader();
+        if (onPick) onPick(key);
+      });
+    });
   };
 
   /* ---------- 活動卡片（首頁／我的活動共用） ---------- */
@@ -257,22 +404,36 @@ window.WP = window.WP || {};
 
   /* ---------- 登入 ---------- */
   WP.askLogin = function (then, intro) {
+    var picks = WP.animalAvatars.map(function (a) {
+      return '<button type="button" class="ava-opt" data-key="' + a.key + '" aria-label="' + WP.esc(a.label) + '" title="' + WP.esc(a.label) + '">' +
+        '<span class="avatar lg has-face">' + WP.faces[a.key] + '</span></button>';
+    }).join('');
     var m = WP.modal({
       title: '登入願望池',
       body: '<p class="modal-sub">' + WP.esc(intro || '輸入一個暱稱就能開始，資料只存在這台裝置的瀏覽器裡；示範版僅以暱稱識別身分。') + '</p>' +
         '<form id="login-form" novalidate>' +
         '<div class="field"><label>你的暱稱 <b class="req">*</b></label>' +
         '<input name="name" maxlength="20" autocomplete="off" required></div>' +
+        '<div class="field"><label>選一個大頭照 <span class="opt-tag">選填</span></label>' +
+        '<div class="ava-grid compact">' + picks + '</div></div>' +
         '<div class="modal-actions"><button class="btn btn-primary btn-block" type="submit">開始揪團</button></div>' +
         '</form>'
     });
     var form = WP.$('#login-form', m.el);
+    var chosen = '';
+    WP.$$('.ava-opt', m.el).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var was = b.classList.contains('sel');
+        WP.$$('.ava-opt', m.el).forEach(function (x) { x.classList.remove('sel'); });
+        if (was) { chosen = ''; } else { b.classList.add('sel'); chosen = b.dataset.key; }
+      });
+    });
     form.name.focus();
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var name = form.name.value.trim();
       if (!name) { form.name.focus(); return; }
-      WP.login(name);
+      WP.login(name, chosen);
       m.close();
       WP.toast('哈囉，' + name + '！', 'success');
       WP.renderHeader();
@@ -416,6 +577,7 @@ window.WP = window.WP || {};
       '</div></div>' +
       (me ? '<div class="user-menu" id="user-menu" hidden>' +
         '<a href="my.html">' + I.ticket + '個人活動中心</a>' +
+        '<button id="avatar-btn">' + I.edit + '更換大頭照</button>' +
         '<a href="notify.html">' + I.bell + '通知' + (unread ? '（' + unread + '）' : '') + '</a>' +
         '<button id="logout-btn">' + I.arrowL + '登出</button></div>' : '');
     var loginBtn = WP.$('#login-btn', host);
@@ -426,6 +588,13 @@ window.WP = window.WP || {};
       chip.addEventListener('click', function (e) {
         e.stopPropagation();
         menu.hidden = !menu.hidden;
+      });
+      var avaBtn = WP.$('#avatar-btn', menu);
+      if (avaBtn) avaBtn.addEventListener('click', function () {
+        menu.hidden = true;
+        WP.pickAvatar(function () {
+          if (document.body.dataset.reloadOnAuth) location.reload();
+        });
       });
       WP.$('#logout-btn', menu).addEventListener('click', function () {
         WP.logout();
@@ -460,12 +629,7 @@ window.WP = window.WP || {};
       '<p>把想做的事丟進池子裡，總會有人跟你一起。' +
       (connected ? '資料會自動同步到雲端。' : '示範資料僅儲存在此瀏覽器（localStorage）。') + '</p>' +
       '<span class="foot-sync" id="sync-state">' + SYNC_LABEL[WP.syncState()] + '</span>' +
-      '<button class="foot-reset" id="reset-demo">重置示範資料</button>' +
       '</div>';
-    WP.$('#reset-demo', host).addEventListener('click', function () {
-      WP.confirm({ title: '重置示範資料', body: '將清除所有活動、報名與留言，回到初始示範狀態' + (WP.gasUrl() ? '，並同步覆寫雲端資料' : '') + '。確定重置？', danger: true, okText: '重置' })
-        .then(function (yes) { if (yes) WP.resetDemo(); });
-    });
   };
 
   // 同步狀態變化時更新頁尾標籤（模組層級只註冊一次）
@@ -521,6 +685,7 @@ window.WP = window.WP || {};
   /** 每頁進入點：渲染頁首頁尾＋補發提醒通知＋與雲端對時 */
   WP.mountChrome = function (active) {
     WP.ensureReminders();
+    WP.ensureGroupReminders();
     WP.renderHeader(active);
     WP.renderFooter();
     WP.cloudInit(function () { location.reload(); }); // 雲端較新時採用雲端版本並重載
