@@ -465,7 +465,10 @@ window.WP = window.WP || {};
       body: (isEdit ? '' : '<p class="modal-sub">' + WP.esc(WP.fmtDateRange(ev)) + ' ' + WP.esc(WP.fmtTimeRange(ev)) + '・' + WP.esc(ev.venue || '') + '</p>') +
         notice +
         '<form id="reg-form" novalidate>' +
-        '<div class="field"><label>暱稱或姓名 <b class="req">*</b></label><input name="name" maxlength="20" required value="' + WP.esc(v.name) + '"></div>' +
+        '<div class="field"><label>暱稱或姓名' + (isEdit ? '' : ' <b class="req">*</b>') + '</label>' +
+        '<input name="name" maxlength="20"' + (isEdit ? ' readonly' : ' required') + ' value="' + WP.esc(v.name) + '">' +
+        (isEdit ? '<div class="lock-hint">' + I.info + '<span>暱稱或姓名無法修改</span></div>' : '') +
+        '</div>' +
         '<div class="grid2">' +
         '<div class="field"><label>Email</label><input name="email" type="email" placeholder="選填" value="' + WP.esc(v.email) + '"></div>' +
         '<div class="field"><label>電話</label><input name="phone" type="tel" maxlength="15" placeholder="選填" value="' + WP.esc(v.phone) + '"></div>' +
@@ -476,13 +479,20 @@ window.WP = window.WP || {};
         '</form>'
     });
     var form = WP.$('#reg-form', m.el);
-    form.name.focus();
+    // 用明確的欄位參照，避免 form.name 與表單自身 name 屬性衝突
+    var elName = WP.$('[name="name"]', form), elEmail = WP.$('[name="email"]', form),
+        elPhone = WP.$('[name="phone"]', form), elNote = WP.$('[name="note"]', form);
+    (isEdit ? elEmail : elName).focus(); // 修改時暱稱鎖定，改聚焦 Email
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      var data = { name: form.name.value, email: form.email.value, phone: form.phone.value, note: form.note.value };
-      if (!data.name.trim()) { form.name.focus(); return; }
+      // 修改報名資料時不帶 name，暱稱或姓名維持原值不可更改；新報名才收 name
+      var data = { email: elEmail.value, phone: elPhone.value, note: elNote.value };
+      if (!isEdit) {
+        data.name = elName.value;
+        if (!data.name.trim()) { elName.focus(); return; }
+      }
       if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-        WP.toast('Email 格式看起來不太對', 'warn'); form.email.focus(); return;
+        WP.toast('Email 格式看起來不太對', 'warn'); elEmail.focus(); return;
       }
       if (isEdit) {
         WP.updateReg(existing.id, data);
