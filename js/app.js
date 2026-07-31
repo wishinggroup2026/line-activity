@@ -453,7 +453,10 @@ window.WP = window.WP || {};
     var isEdit = !!existing;
     var toWaitlist = !isEdit && c.confirmed >= ev.capacity;
     var wlFull = toWaitlist && c.waitlist >= (ev.waitlistCap || 0);
-    var v = existing || { name: (WP.me() ? WP.me().name : ''), email: '', phone: '', note: '' };
+    var meNow = WP.me();
+    var v = existing || { name: (meNow ? meNow.name : ''), email: '', phone: '', note: '' };
+    // 暱稱鎖定：修改報名 或 已登入的新報名 → 一律綁定既有暱稱，不可更改；只有未登入訪客的新報名才能自行輸入
+    var lockName = isEdit || !!meNow;
     var notice = '';
     if (wlFull) {
       notice = '<div class="wait-note">' + I.info + '<span>正取與候補名額皆已額滿，目前無法報名，可以到留言區關注是否有名額釋出。</span></div>';
@@ -465,9 +468,10 @@ window.WP = window.WP || {};
       body: (isEdit ? '' : '<p class="modal-sub">' + WP.esc(WP.fmtDateRange(ev)) + ' ' + WP.esc(WP.fmtTimeRange(ev)) + '・' + WP.esc(ev.venue || '') + '</p>') +
         notice +
         '<form id="reg-form" novalidate>' +
-        '<div class="field"><label>暱稱或姓名' + (isEdit ? '' : ' <b class="req">*</b>') + '</label>' +
-        '<input name="name" maxlength="20"' + (isEdit ? ' readonly' : ' required') + ' value="' + WP.esc(v.name) + '">' +
-        (isEdit ? '<div class="lock-hint">' + I.info + '<span>暱稱或姓名無法修改</span></div>' : '') +
+        '<div class="field"><label>暱稱或姓名' + (lockName ? '' : ' <b class="req">*</b>') + '</label>' +
+        '<input name="name" maxlength="20"' + (lockName ? ' readonly' : ' required') + ' value="' + WP.esc(v.name) + '">' +
+        (lockName ? '<div class="lock-hint">' + I.info + '<span>' +
+          (isEdit ? '暱稱或姓名無法修改' : '將以你的登入暱稱「' + WP.esc(v.name) + '」報名') + '</span></div>' : '') +
         '</div>' +
         '<div class="grid2">' +
         '<div class="field"><label>Email</label><input name="email" type="email" placeholder="選填" value="' + WP.esc(v.email) + '"></div>' +
@@ -482,12 +486,12 @@ window.WP = window.WP || {};
     // 用明確的欄位參照，避免 form.name 與表單自身 name 屬性衝突
     var elName = WP.$('[name="name"]', form), elEmail = WP.$('[name="email"]', form),
         elPhone = WP.$('[name="phone"]', form), elNote = WP.$('[name="note"]', form);
-    (isEdit ? elEmail : elName).focus(); // 修改時暱稱鎖定，改聚焦 Email
+    (lockName ? elEmail : elName).focus(); // 暱稱鎖定時改聚焦 Email
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      // 修改報名資料時不帶 name，暱稱或姓名維持原值不可更改；新報名才收 name
+      // 暱稱鎖定時不從表單收 name（維持既有暱稱）；只有未登入訪客的新報名才自行輸入
       var data = { email: elEmail.value, phone: elPhone.value, note: elNote.value };
-      if (!isEdit) {
+      if (!lockName) {
         data.name = elName.value;
         if (!data.name.trim()) { elName.focus(); return; }
       }
@@ -501,7 +505,9 @@ window.WP = window.WP || {};
         if (onDone) onDone({ state: existing.state });
         return;
       }
-      if (!WP.me()) WP.login(data.name);
+      var me = WP.me();
+      if (me) data.name = me.name;      // 已登入：一律以登入暱稱報名（不可改）
+      else WP.login(data.name);          // 未登入訪客：用輸入的暱稱建立/登入帳號
       var r = WP.register(ev.id, data);
       m.close();
       if (!r.ok) { WP.toast(r.msg, 'warn'); return; }
