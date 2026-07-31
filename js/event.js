@@ -190,6 +190,11 @@
     return '<span class="avatar sm" style="background:' + ATT_BGS[s % ATT_BGS.length] + '">' +
       WP.esc(name.charAt(0).toUpperCase()) + '</span>';
   }
+  /** 報名者頭像：有綁定帳號就用帳號的大頭照（含動物大頭照），否則用暱稱首字底色 */
+  function regAvatar(r) {
+    var u = r.userId ? WP.getUser(r.userId) : null;
+    return u ? WP.avatar(u, 'sm') : nameAvatar(r.name);
+  }
 
   function attendeesHTML(ev) {
     if (ev.draft) return '';
@@ -201,7 +206,7 @@
     function chip(r, extra) {
       var isMe = !!(me && r.userId === me.id);
       var isOrg = r.userId === ev.organizerId;
-      return '<span class="att-chip' + (isMe ? ' is-me' : '') + '">' + nameAvatar(r.name) +
+      return '<span class="att-chip' + (isMe ? ' is-me' : '') + '">' + regAvatar(r) +
         '<span class="att-name">' + WP.esc(r.name) + '</span>' +
         (isOrg ? '<i class="att-org">主辦人</i>' : '') +
         (extra || '') + (isMe ? '<i class="att-me">你</i>' : '') + '</span>';
