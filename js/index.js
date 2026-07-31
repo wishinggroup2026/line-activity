@@ -7,6 +7,10 @@
   WP.$('#s-kw-wrap .s-ic').outerHTML = I.search;
   WP.$('.s-when .s-cal').outerHTML = I.calendar;
 
+  // 手機版採「方案 C：內容優先」——搜尋收合成頁首圖示、隱藏月份列、狀態改三段式；桌機不受影響
+  function isMobile() { return window.matchMedia('(max-width: 720px)').matches; }
+  function closeSearchPanel() { var sz = WP.$('#search'); if (sz) sz.classList.remove('open'); }
+
   var state = {
     q: WP.qs('q') || '',
     when: WP.qs('when') || '',
@@ -52,6 +56,7 @@
         kwInput.value = b.dataset.tag;
         state.q = b.dataset.tag;
         render();
+        if (isMobile()) closeSearchPanel(); // 選了標籤就收起搜尋面板，露出結果
       });
     });
   }
@@ -138,8 +143,8 @@
     var months = monthsOf(base);
     // 釘選的月份若已無活動（例如切換了狀態），取消釘選、改回自動
     if (state.monthPinned && state.monthPinned !== 'all' && months.indexOf(state.monthPinned) === -1) state.monthPinned = null;
-    // 未釘選就自動選最近有活動的月份
-    var curMonth = state.monthPinned != null ? state.monthPinned : nearestMonth(months);
+    // 未釘選就自動選最近有活動的月份；手機版（方案 C）改顯示全部月份，靠日期分組往下滑
+    var curMonth = state.monthPinned != null ? state.monthPinned : (isMobile() ? 'all' : nearestMonth(months));
     renderMonthChips(months, curMonth);
     syncURL();
 
@@ -210,9 +215,10 @@
   WP.$('#s-go').addEventListener('click', function () {
     state.q = kwInput.value.trim();
     render();
+    if (isMobile()) closeSearchPanel();
   });
   kwInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') { state.q = kwInput.value.trim(); render(); }
+    if (e.key === 'Enter') { state.q = kwInput.value.trim(); render(); if (isMobile()) { kwInput.blur(); closeSearchPanel(); } }
   });
   whenSel.addEventListener('change', function () {
     if (whenSel.value === 'pick') {
@@ -234,6 +240,22 @@
     render();
   });
 
+  // 頁首放大鏡：手機版點擊展開／收合搜尋面板（桌機維持原本捲動到搜尋區的行為）
+  // 用事件委派綁在 document，頁首重繪後仍有效
+  document.addEventListener('click', function (e) {
+    var ic = e.target.closest('.icon-btn');
+    if (!ic || !isMobile()) return;
+    e.preventDefault();
+    var sz = WP.$('#search');
+    if (!sz) return;
+    var willOpen = !sz.classList.contains('open');
+    sz.classList.toggle('open', willOpen);
+    if (willOpen) { window.scrollTo({ top: 0, behavior: 'smooth' }); kwInput.focus(); }
+  });
+
   renderHotTags();
   render();
+
+  // 手機版若網址帶有搜尋關鍵字，一進來就展開搜尋面板讓使用者看得到
+  if (isMobile() && state.q) { var sz0 = WP.$('#search'); if (sz0) sz0.classList.add('open'); }
 })();

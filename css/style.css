@@ -779,3 +779,32 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: inher
   .mreg-side { align-items: stretch; width: 100%; }
   .mreg-side .acts { justify-content: flex-end; }
 }
+
+/* ============ 首頁手機版：方案 C（內容優先）============ */
+/* 目標：一進首頁就先看到活動。搜尋收合成頁首放大鏡，隱藏大標題與月份列，
+   狀態篩選改成三段式切換（報名中／即將開始／全部）。僅影響手機（≤720px），桌機不變。 */
+@media (max-width: 720px) {
+  /* 搜尋預設收合，點頁首放大鏡才展開（展開時一併顯示熱門標籤） */
+  .search-zone { display: none; }
+  .search-zone.open { display: block; padding: 12px 0 4px; }
+  /* 拿掉大標題區，內容優先 */
+  .hero-head { display: none; }
+  /* 月份改靠日期分組往下滑，隱藏月份列 */
+  .filter-zone { padding: 14px 0 6px; }
+  .filter-zone .month-row { display: none; }
+  /* 狀態篩選 → 三段式切換：只留報名中／即將開始／全部 */
+  #status-chips {
+    flex-wrap: nowrap; gap: 4px;
+    background: var(--bg-soft); border-radius: 13px; padding: 4px;
+  }
+  #status-chips .chip {
+    flex: 1; justify-content: center; padding: 9px 0;
+    border: 0; border-radius: 9px; background: none; box-shadow: none;
+    color: var(--ink-2); font-weight: 700;
+  }
+  #status-chips .chip.active { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+  #status-chips .chip[data-f="full"], #status-chips .chip[data-f="ended"] { display: none; }
+  #status-chips .chip[data-f="open"] { order: 1; }
+  #status-chips .chip[data-f="upcoming"] { order: 2; }
+  #status-chips .chip[data-f="all"] { order: 3; }
+}
