@@ -24,6 +24,7 @@ window.WP = window.WP || {};
     if (db) return db;
     try { db = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { db = null; }
     if (!db || db.v !== 1) { db = seed(); persist(); } // 種子資料不標記時間，讓雲端資料優先
+    if (!db.deleted) db.deleted = []; // 舊資料相容：刪除墓碑清單
     if (!db.orgRegMig) migrateOrganizerRegs();
     return db;
   }
@@ -34,8 +35,10 @@ window.WP = window.WP || {};
     persist();
   }
   function persist() { localStorage.setItem(KEY, JSON.stringify(db)); }
+  var dirtySeq = 0; // 每次本機寫入 +1；push 用來偵測「上傳飛行期間又改了資料」
   function save() {
     db.u = Date.now(); // 最後修改時間，供多裝置同步比對新舊
+    dirtySeq++;
     persist();
     schedulePush();
   }
@@ -43,9 +46,10 @@ window.WP = window.WP || {};
   WP.resetDemo = function () {
     db = seed();
     db.u = Date.now(); // 重置視為一次修改，蓋過雲端舊資料
+    dirtySeq++;
     persist();
     var done = function () { location.reload(); };
-    if (WP.gasUrl()) pushNow().then(done, done); else done();
+    if (WP.gasUrl()) pushNow(true).then(done, done); else done(); // replace=true：重置要整包覆蓋雲端
   };
 
   WP.anonId = function () {
@@ -59,7 +63,7 @@ window.WP = window.WP || {};
   var AVATAR_BGS = ['#F2B8AC', '#F5D3A1', '#BCD9C0', '#B9CFE0', '#E4C6E0', '#F0E1A8', '#C9C4E4', '#F5C1CE', '#CFE0D8', '#EAD3BE'];
 
   function seed() {
-    var d = { v: 1, session: null, users: [], events: [], regs: [], comments: [], notifs: [], settings: {}, groupNotified: [] };
+    var d = { v: 1, session: null, users: [], events: [], regs: [], comments: [], notifs: [], settings: {}, groupNotified: [], deleted: [] };
 
     function addUser(id, name, emoji, bg) { d.users.push({ id: id, name: name, emoji: emoji || '', bg: bg || AVATAR_BGS[d.users.length % AVATAR_BGS.length], createdAt: nowISO() }); return id; }
     addUser('org_badminton', '週三羽球社', '🏸', '#F2B8AC');
@@ -86,7 +90,8 @@ window.WP = window.WP || {};
         var name = NAME_POOL[(poolOffset + i) % NAME_POOL.length];
         if (poolOffset + i >= NAME_POOL.length) name += '_' + (poolOffset + i);
         d.regs.push({
-          id: uid('reg'), eventId: eventId, userId: 'seed_' + eventId + '_' + i,
+          // 種子資料用確定性 id，讓多台裝置各自種下的示範資料合併時能對上、不會重複
+          id: 'seedreg_' + eventId + '_' + i, eventId: eventId, userId: 'seed_' + eventId + '_' + i,
           name: name, email: '', phone: '', note: '',
           state: state, createdAt: isoOffset(-(dayAgoBase + Math.floor(i / 3)), pad2(9 + (i % 12)) + ':' + pad2((i * 7) % 60)), updatedAt: nowISO()
         });
@@ -188,9 +193,9 @@ window.WP = window.WP || {};
     regs(e9.id, 10, 'confirmed', 40, 8);
 
     d.comments.push(
-      { id: uid('c'), eventId: e1.id, userId: null, anonId: 'seed_anon_1', name: '小魚', text: '第一次參加，請問需要自備球拍嗎？', createdAt: isoOffset(-4, '14:20') },
-      { id: uid('c'), eventId: e1.id, userId: 'org_badminton', anonId: '', name: '週三羽球社', text: '現場有公用球拍可以借，直接來就好！第一次來會有幹部帶熱身 💪', createdAt: isoOffset(-4, '15:02') },
-      { id: uid('c'), eventId: e5.id, userId: null, anonId: 'seed_anon_2', name: '阿凱', text: '請問夢幻湖登山口附近好停車嗎？還是建議搭車上山？', createdAt: isoOffset(-2, '21:40') }
+      { id: 'seedc_1', eventId: e1.id, userId: null, anonId: 'seed_anon_1', name: '小魚', text: '第一次參加，請問需要自備球拍嗎？', createdAt: isoOffset(-4, '14:20') },
+      { id: 'seedc_2', eventId: e1.id, userId: 'org_badminton', anonId: '', name: '週三羽球社', text: '現場有公用球拍可以借，直接來就好！第一次來會有幹部帶熱身 💪', createdAt: isoOffset(-4, '15:02') },
+      { id: 'seedc_3', eventId: e5.id, userId: null, anonId: 'seed_anon_2', name: '阿凱', text: '請問夢幻湖登山口附近好停車嗎？還是建議搭車上山？', createdAt: isoOffset(-2, '21:40') }
     );
     return d;
   }
@@ -222,11 +227,12 @@ window.WP = window.WP || {};
     if (!name) return null;
     var u = d.users.find(function (x) { return x.name === name; });
     if (!u) {
-      u = { id: uid('u'), name: name, emoji: '', avatar: avatar || '', bg: AVATAR_BGS[Math.floor(Math.random() * AVATAR_BGS.length)], createdAt: nowISO() };
+      u = { id: uid('u'), name: name, emoji: '', avatar: avatar || '', bg: AVATAR_BGS[Math.floor(Math.random() * AVATAR_BGS.length)], createdAt: nowISO(), updatedAt: nowISO() };
       if (isAdminName(name)) { u.emoji = '🛡️'; u.bg = '#2B2620'; }
       d.users.push(u);
     } else if (avatar) {
       u.avatar = avatar; // 既有使用者重新登入時若有挑選，更新大頭照
+      u.updatedAt = nowISO();
     }
     d.session = u.id;
     save();
@@ -241,6 +247,7 @@ window.WP = window.WP || {};
     var u = d.users.find(function (x) { return x.id === d.session; });
     if (!u) return null;
     u.avatar = key || '';
+    u.updatedAt = nowISO();
     save();
     return u;
   };
@@ -324,7 +331,8 @@ window.WP = window.WP || {};
     var c = WP.counts(ev.id);
     if (c.confirmed >= ev.capacity) return;
     d.regs.push({
-      id: uid('reg'), eventId: ev.id, userId: ev.organizerId,
+      // 確定性 id：一場活動的主辦人報名唯一，避免多裝置各自補時合併成重複列
+      id: 'orgreg_' + ev.id, eventId: ev.id, userId: ev.organizerId,
       name: org.name, email: '', phone: '', note: '主辦人',
       state: 'confirmed',
       createdAt: ev.regStart || ev.createdAt || nowISO(), // 排在名單最前
@@ -339,15 +347,19 @@ window.WP = window.WP || {};
     catch (e) { return ''; }
   }
 
-  /** 送出一則群組公告到 Apps Script（推播給所有已加入機器人的 LINE 群組） */
-  function announceGroup(title, body) {
+  /**
+   * 送出一則群組公告到 Apps Script（推播給所有已加入機器人的 LINE 群組）。
+   * key：去重鍵。伺服器端 _announced 帳本會記住，同一個 key 只公告一次；
+   *      因此就算多台裝置（含資料較舊者）同時觸發，群組也只會收到一則。
+   */
+  function announceGroup(title, body, key) {
     var url = WP.gasUrl();
     if (!url || typeof fetch !== 'function') return;
     try {
       fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'announce', title: title, body: body })
+        body: JSON.stringify({ action: 'announce', title: title, body: body, key: key || '' })
       }).catch(function () {});
     } catch (e) {}
   }
@@ -366,8 +378,8 @@ window.WP = window.WP || {};
     ];
     if (ev.mapUrl && /^https?:\/\//i.test(ev.mapUrl)) lines.push('🗺️ ' + ev.mapUrl);
     var link = eventUrl(ev);
-    if (link) lines.push(link);
-    announceGroup('新活動上架 🎉', lines.join('\n'));
+    if (link) lines.push('🔗 ' + link);
+    announceGroup('新活動上架 🎉', lines.join('\n'), 'new:' + ev.id);
   }
 
   /** 活動當天公告到 LINE 群組（每場僅一次；任一裝置載入頁面時檢查補發） */
@@ -392,14 +404,15 @@ window.WP = window.WP || {};
       ];
       if (ev.mapUrl && /^https?:\/\//i.test(ev.mapUrl)) lines.push('🗺️ ' + ev.mapUrl);
       var link = eventUrl(ev);
-      if (link) lines.push(link);
-      announceGroup('今天有活動 📣', lines.join('\n'));
+      if (link) lines.push('🔗 ' + link);
+      announceGroup('今天有活動 📣', lines.join('\n'), key);
     });
     if (changed) save();
   };
 
   WP.deleteEvent = function (id) {
     var d = load();
+    d.deleted.push(id); // 墓碑：讓刪除能同步傳播，合併時不會被其他裝置的舊資料復活
     d.events = d.events.filter(function (e) { return e.id !== id; });
     d.regs = d.regs.filter(function (r) { return r.eventId !== id; });
     d.comments = d.comments.filter(function (c) { return c.eventId !== id; });
@@ -594,6 +607,7 @@ window.WP = window.WP || {};
   };
   WP.deleteComment = function (id) {
     var d = load();
+    d.deleted.push(id); // 墓碑：讓刪除能同步傳播，合併時不會被復活
     d.comments = d.comments.filter(function (x) { return x.id !== id; });
     save();
   };
@@ -712,8 +726,13 @@ window.WP = window.WP || {};
   var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbwRe79n4AtRL3KyHhXW3_O9OJ8Xm4GUQQIsUZD98iyatM3ii7ywWthnawJ_6IH3pxqf/exec';
   var GAS_KEY = 'wishpool_gas_url';
   var GAS_OFF = '__off__'; // 使用者明確中斷連線的標記，避免回退到預設網址
+  var BASE_KEY = 'wishpool_base_u'; // 本機最後一次與雲端對齊的版本（.u）；本機更新後 db.u 會超過它＝有未同步修改
   var pushTimer = null;
   var syncState = 'idle'; // idle | syncing | ok | error（未設定網址時一律回報 off）
+
+  // 本機同步浮水印：各裝置自己的狀態，不上雲
+  function baseU() { var v = parseInt(localStorage.getItem(BASE_KEY) || '0', 10); return isNaN(v) ? 0 : v; }
+  function setBaseU(v) { try { localStorage.setItem(BASE_KEY, String(v || 0)); } catch (e) {} }
 
   WP.gasUrl = function () {
     var v = localStorage.getItem(GAS_KEY);
@@ -741,13 +760,30 @@ window.WP = window.WP || {};
     pushTimer = setTimeout(function () { pushNow(); }, 1200); // 連續操作只推一次
   }
 
-  function pushNow() {
+  /** 採用雲端（或伺服器合併後）版本為本機真相：保留本機登入狀態，更新同步浮水印 */
+  function adoptRemote(remote) {
+    if (!remote || remote.v !== 1) return;
+    var local = db || load();
+    remote.session = (local && local.session) || null; // 登入狀態留在本機
+    if (remote.session && !(remote.users || []).some(function (u) { return u.id === remote.session; })) {
+      var meUser = (local.users || []).find(function (u) { return u.id === local.session; });
+      if (meUser) { remote.users = remote.users || []; remote.users.push(meUser); } else remote.session = null;
+    }
+    if (!remote.deleted) remote.deleted = [];
+    db = remote;
+    persist();
+    setBaseU(remote.u || 0);
+  }
+
+  function pushNow(replace) {
     var url = WP.gasUrl();
     if (!url) return Promise.resolve(false);
     clearTimeout(pushTimer);
     setSync('syncing');
+    var seq = dirtySeq; // 記下送出當下的版本，用來偵測飛行期間是否又有新修改
     // session（誰登入中）是各裝置自己的狀態，不上雲
     var payload = Object.assign({}, load(), { session: null });
+    if (replace) payload.replace = true; // 只有重置示範資料時整包覆蓋，其餘一律讓伺服器合併
     // Content-Type 用 text/plain 避免 CORS preflight（Apps Script 不支援 OPTIONS）
     return fetch(url, {
       method: 'POST',
@@ -755,14 +791,25 @@ window.WP = window.WP || {};
       body: JSON.stringify(payload)
     }).then(function (r) { return r.json(); })
       .then(function (res) {
-        setSync(res && res.ok ? 'ok' : 'error');
-        return !!(res && res.ok);
+        var ok = !!(res && res.ok);
+        // 飛行期間若又有本機修改（dirtySeq 變了），先不採用合併結果，交給下一次 push 收斂，避免蓋掉新改動
+        if (ok && dirtySeq === seq) {
+          if (res.db && res.db.v === 1) adoptRemote(res.db); // 補回其他裝置的資料
+          else setBaseU(load().u || 0);
+        }
+        setSync(ok ? 'ok' : 'error');
+        return ok;
       })
       .catch(function () { setSync('error'); return false; });
   }
   WP.pushNow = pushNow;
 
-  /** 開頁時與雲端對時：雲端較新→採用並回呼（通常整頁重載）；本機較新或雲端為空→上傳本機 */
+  /**
+   * 開頁時與雲端對時：
+   *   本機有未同步修改（dirty）→ 上傳讓伺服器逐筆合併，再採用合併結果（不會蓋掉雲端，也不會丟掉本機）
+   *   本機乾淨、雲端較新     → 直接採用雲端（通常整頁重載）
+   *   雲端為空或較舊         → 把本機推上去（伺服器仍會合併）
+   */
   WP.cloudInit = function (onRemoteNewer) {
     var url = WP.gasUrl();
     if (!url) return;
@@ -775,19 +822,18 @@ window.WP = window.WP || {};
         var local = load();
         var lu = local.u || 0;
         var ru = (remote && remote.u) || 0;
-        if (remote && remote.v === 1 && ru > lu) {
-          remote.session = local.session || null; // 登入狀態留在本機
-          if (remote.session && !remote.users.some(function (u) { return u.id === remote.session; })) {
-            var meUser = local.users.find(function (u) { return u.id === local.session; });
-            if (meUser) remote.users.push(meUser); else remote.session = null;
-          }
-          db = remote;
-          persist();
+        var dirty = lu > baseU(); // 本機自上次對齊後又改過，尚未併入雲端
+        var remoteNewer = remote && remote.v === 1 && ru > lu;
+        if (dirty) {
+          pushNow().then(function () { if (remoteNewer && onRemoteNewer) onRemoteNewer(); });
+        } else if (remoteNewer) {
+          adoptRemote(remote);
           setSync('ok');
           if (onRemoteNewer) onRemoteNewer();
         } else if (!remote || lu > ru) {
           pushNow(); // 雲端為空或較舊：把本機推上去
         } else {
+          setBaseU(ru); // 兩邊一致：記下已對齊的版本
           setSync('ok');
         }
       })
