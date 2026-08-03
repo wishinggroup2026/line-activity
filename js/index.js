@@ -22,10 +22,12 @@
   var FILTERS = [
     ['all', '全部活動'],
     ['open', '報名中'],
-    ['upcoming', '即將開始'],
+    ['soon', '即將舉行'],
     ['full', '已額滿'],
     ['ended', '已結束']
   ];
+  // 舊網址若帶已移除的 filter（例如 upcoming），回退到「報名中」，避免無對應晶片卻仍在篩選
+  if (!FILTERS.some(function (f) { return f[0] === state.filter; })) state.filter = 'open';
 
   /** 月份標籤：同一年只顯示「7 月」，跨年才加年份 */
   function monthLabel(ym) {
@@ -81,8 +83,18 @@
       .filter(Boolean).join(' ').toLowerCase();
     return hay.indexOf(q) !== -1;
   }
+  /** 「即將舉行」：開始日落在今天～7 天內，且活動尚未開始（不含已在進行中的多天活動） */
+  function startsSoon(ev) {
+    var today = WP.todayStr();
+    if (!ev.date || ev.date < today) return false; // 開始日在過去（含已進行中的多天活動）→ 排除
+    var lim = new Date(); lim.setDate(lim.getDate() + 7);
+    var limStr = lim.getFullYear() + '-' + ('0' + (lim.getMonth() + 1)).slice(-2) + '-' + ('0' + lim.getDate()).slice(-2);
+    if (ev.date > limStr) return false; // 超過未來 7 天 → 排除
+    return WP.dt(ev.date, ev.start || '00:00') > new Date(); // 今天但開始時間已過的排除（尚未開始才算）
+  }
   function matchFilter(ev, st) {
     if (state.filter === 'all') return st !== 'cancelled';
+    if (state.filter === 'soon') return st !== 'cancelled' && startsSoon(ev);
     if (state.filter === 'ended') return st === 'ended';
     if (state.filter === 'open') return st === 'open';
     return st === state.filter;
