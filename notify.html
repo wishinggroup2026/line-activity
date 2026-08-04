@@ -31,6 +31,51 @@
   margin-top: 14px; font-size: 12.5px; color: var(--ink-3);
 }
 .set-note .ic { margin-top: 2px; }
+
+/* --- 分區：進行中 / 已結束（收合） --- */
+.notif-live { display: flex; flex-direction: column; gap: 12px; }
+.notif-group {
+  font-size: 12px; font-weight: 800; letter-spacing: 2.5px;
+  color: var(--ink-3); margin: 2px 0 -2px;
+}
+.notif-none { font-size: 13.5px; color: var(--ink-3); padding: 2px 0 4px; }
+
+.past-block { margin-top: 4px; }
+.past-bar {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 13px 16px; font: inherit; text-align: left; cursor: pointer;
+  background: var(--bg-soft); color: var(--ink-2);
+  border: 1px dashed var(--line); border-radius: var(--radius-sm); transition: .15s;
+}
+.past-bar:hover { border-color: var(--ink-3); color: var(--ink); }
+.past-chev { display: inline-flex; flex: none; color: var(--ink-3); transition: transform .18s; }
+.past-bar[aria-expanded="true"] .past-chev { transform: rotate(90deg); }
+.past-lab { font-size: 14px; font-weight: 700; }
+.past-count { margin-left: auto; font-size: 12.5px; color: var(--ink-3); }
+.past-unread {
+  flex: none; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px;
+  background: var(--red-soft); color: var(--red-deep);
+}
+.past-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.past-list[hidden] { display: none; }
+.past-more { align-self: flex-start; margin-top: 2px; }
+
+/* 已結束通知：淡化、單行摘要 */
+.notif-item.is-past { padding: 11px 14px; align-items: center; background: transparent; opacity: .82; }
+.notif-item.is-past:hover { opacity: 1; }
+.notif-item.is-past .notif-ic { width: 30px; height: 30px; }
+.notif-item.is-past .notif-ic .ic { width: 17px; height: 17px; }
+.notif-item.is-past .notif-main { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
+.notif-item.is-past .notif-main h4 { font-size: 13.5px; font-weight: 600; flex: none; }
+.notif-item.is-past .notif-main p {
+  flex: 1 1 180px; min-width: 0; margin-top: 0; font-size: 13px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.notif-item.is-past .notif-main time { flex: none; margin-top: 0; }
+@media (max-width: 560px) {
+  .past-count { margin-left: 0; }
+  .past-lab { flex: 1; }
+}
 </style>
 </head>
 <body data-reload-on-auth="1">

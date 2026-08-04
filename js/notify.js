@@ -27,6 +27,14 @@
     remind: { cls: 'n-remind', ic: I.bell }
   };
 
+  /* 已結束活動的通知：預設收合，避免頁面被舊通知撐長 */
+  var PAST_KEY = 'wishpool_notif_past_open';
+  var PAST_PAGE = 10;
+  var pastOpen = false;
+  try { pastOpen = localStorage.getItem(PAST_KEY) === '1'; } catch (e) {}
+  var pastShown = PAST_PAGE;
+  var chevron = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>';
+
   var REMIND_KEYS = ['remind1d'];
   var SETTING_GROUPS = [
     { label: '活動提醒', rows: [
@@ -52,6 +60,44 @@
   }
 
   /* ---------- 通知列表 ---------- */
+  /** 已結束＝關聯活動已結束／已取消（活動被刪除也歸此類） */
+  function isPast(n) {
+    if (!n.eventId) return false;
+    var ev = WP.getEvent(n.eventId);
+    if (!ev) return true;
+    var st = WP.statusOf(ev);
+    return st === 'ended' || st === 'cancelled';
+  }
+
+  function itemHTML(n, past) {
+    var meta = TYPE_META[n.type] || { cls: 'n-remind', ic: I.info };
+    return '<article class="notif-item' + (n.read ? '' : ' unread') + (past ? ' is-past' : '') + '" data-id="' + WP.esc(n.id) + '" role="button" tabindex="0">' +
+      '<span class="notif-ic ' + meta.cls + '">' + meta.ic + '</span>' +
+      '<div class="notif-main">' +
+      '<h4>' + WP.esc(n.title) + (n.read ? '' : '<i class="new-dot"></i>') + '</h4>' +
+      '<p>' + WP.esc(n.body) + '</p>' +
+      '<time>' + WP.esc(WP.fmtDT(n.createdAt)) + '</time>' +
+      '</div>' +
+      (n.eventId ? '<span class="notif-go">' + I.arrowR + '</span>' : '') +
+      '</article>';
+  }
+
+  function pastHTML(past) {
+    var unread = past.filter(function (n) { return !n.read; }).length;
+    var shown = Math.min(pastShown, past.length);
+    return '<div class="past-block">' +
+      '<button type="button" class="past-bar" id="past-toggle" aria-expanded="' + (pastOpen ? 'true' : 'false') + '" aria-controls="past-list">' +
+      '<span class="past-chev">' + chevron + '</span>' +
+      '<span class="past-lab">已結束活動的通知</span>' +
+      '<span class="past-count">' + past.length + ' 則</span>' +
+      (unread ? '<span class="past-unread">' + unread + ' 未讀</span>' : '') +
+      '</button>' +
+      '<div class="past-list" id="past-list"' + (pastOpen ? '' : ' hidden') + '>' +
+      past.slice(0, shown).map(function (n) { return itemHTML(n, true); }).join('') +
+      (shown < past.length ? '<button type="button" class="btn btn-light past-more">顯示更多（還有 ' + (past.length - shown) + ' 則）</button>' : '') +
+      '</div></div>';
+  }
+
   function renderList() {
     if (!WP.me()) {
       listEl.innerHTML =
@@ -73,18 +119,36 @@
       return;
     }
 
-    listEl.innerHTML = list.map(function (n) {
-      var meta = TYPE_META[n.type] || { cls: 'n-remind', ic: I.info };
-      return '<article class="notif-item' + (n.read ? '' : ' unread') + '" data-id="' + WP.esc(n.id) + '" role="button" tabindex="0">' +
-        '<span class="notif-ic ' + meta.cls + '">' + meta.ic + '</span>' +
-        '<div class="notif-main">' +
-        '<h4>' + WP.esc(n.title) + (n.read ? '' : '<i class="new-dot"></i>') + '</h4>' +
-        '<p>' + WP.esc(n.body) + '</p>' +
-        '<time>' + WP.esc(WP.fmtDT(n.createdAt)) + '</time>' +
-        '</div>' +
-        (n.eventId ? '<span class="notif-go">' + I.arrowR + '</span>' : '') +
-        '</article>';
-    }).join('');
+    var live = [], past = [];
+    list.forEach(function (n) { (isPast(n) ? past : live).push(n); });
+
+    var html = past.length ? '<p class="notif-group">進行中</p>' : '';
+    html += live.length
+      ? '<div class="notif-live">' + live.map(function (n) { return itemHTML(n, false); }).join('') + '</div>'
+      : '<p class="notif-none">目前沒有進行中的通知</p>';
+    if (past.length) html += pastHTML(past);
+    listEl.innerHTML = html;
+
+    var toggle = WP.$('#past-toggle', listEl);
+    if (toggle) {
+      toggle.addEventListener('click', function () {
+        pastOpen = !pastOpen;
+        try { localStorage.setItem(PAST_KEY, pastOpen ? '1' : '0'); } catch (e) {}
+        if (!pastOpen) pastShown = PAST_PAGE; // 收合後回到前 10 則
+        renderList();
+        var again = WP.$('#past-toggle', listEl);
+        if (again) again.focus();
+      });
+    }
+    var more = WP.$('.past-more', listEl);
+    if (more) {
+      more.addEventListener('click', function () {
+        pastShown += PAST_PAGE;
+        renderList();
+        var next = WP.$('.past-more', listEl) || WP.$('#past-toggle', listEl);
+        if (next) next.focus();
+      });
+    }
 
     WP.$$('.notif-item', listEl).forEach(function (item) {
       item.addEventListener('click', function () { openNotif(item.dataset.id); });
