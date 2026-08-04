@@ -641,7 +641,12 @@ window.WP = window.WP || {};
     maybeLinePush(userId, n);
   };
 
-  /** 收件者開啟 LINE 通知時，把通知轉發給 Apps Script 推播（有綁定才會真的送出） */
+  /**
+   * 收件者開啟 LINE 通知時，把通知轉發給 Apps Script 推播（有綁定才會真的送出）。
+   * 帶上通知的穩定 key：活動前提醒等每台裝置載入時都會補發的通知會帶 key，
+   * 伺服器據此去重，避免多裝置同時觸發造成同一則個人通知重複推播。
+   * 一次性通知（報名成功、遞補、異動等）key 為空，維持原本每次觸發都送的行為。
+   */
   function maybeLinePush(userId, n) {
     var url = WP.gasUrl();
     if (!url || typeof fetch !== 'function') return;
@@ -652,7 +657,7 @@ window.WP = window.WP || {};
       fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'notify', to: user.name, title: n.title, body: n.body })
+        body: JSON.stringify({ action: 'notify', to: user.name, title: n.title, body: n.body, key: n.key || '' })
       }).catch(function () {}); // 盡力而為，失敗不影響站內通知
     } catch (e) {}
   }
